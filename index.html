@@ -1267,7 +1267,7 @@
       heRouteArrive = null;
     }
     const HE_FOLLOW_GAP = 116;        // 两幅立绘合计约半宽 105px，留出间距避免停走时重叠
-    const flags = { frag1: false, frag2: false, frag3: false, frag4: false, frag5: false, term: {}, battle: false, podOut: false, released: false, escaped: false, finished: false, power: false, termOpen: false };
+    const flags = { frag1: false, frag2: false, frag3: false, frag4: false, frag5: false, term: {}, battle: false, podOut: false, released: false, escaped: false, finished: false, power: false, termOpen: false, termIntro: false };
     const keys = new Set();
 
     /* ---------- 插图点位：内联 SVG（移植自剧情版 v1.2） ---------- */
@@ -1581,6 +1581,7 @@
         ["小禾", "那时候你还挺会说话。", "he"]
       ],
       story: [
+        ["", "侧控台的屏幕右上角亮着一路小画面：解放舱的舱内监视。她在玻璃后面，工具摊在膝上。你按下了通讯。", "narr"],
         ["主角", "说说那天吧。", "hero"],
         ["小禾", "哪天。", "he"],
         ["主角", "最后一次。", "hero"],
@@ -1598,10 +1599,22 @@
         ["小禾", "门是我自己走进去的。我可以恨你关门，但没法假装是别人把我推进去的。", "he"],
         ["主角", "如果那天我不来。", "hero"],
         ["小禾", "我就跟他们下待检区了。那批人后来一个都没回来。", "he"],
-        ["", "她把手套重新戴上，动作很慢。", "narr"],
+        ["", "画面里，她把手套重新戴上，动作很慢。", "narr"],
         ["小禾", "你把我关起来，也把我留下来了。这两件事我算不清哪件更重。", "he"],
         ["主角", "那就不算。这次我不关门，你自己走出去。", "hero"],
-        ["小禾", "……先把线修好再说。", "he"]
+        ["小禾", "……先回主控台。炉心还压在我手里，不能聊太久。", "he"]
+      ],
+      storyIdle: [
+        ["", "监视画面里她还坐在原地，抱着膝盖看这边。该说的那天都说过了——现在轮到做该做的了。", "narr"]
+      ],
+      termIntro: [
+        ["", "墙角的终端亮着一粒待机灯。城市中继终端——旧网的公共记录节点：公告、条款、事故档案，当年都从这种机器上发。", "narr"],
+        ["主角", "这东西怎么还活着。", "hero"],
+        ["小禾", "挂在你刚接好的那条木行回路上。三号井一废，它就黑了——你把线接通，它才又亮。", "he"],
+        ["A", "可读取：城市检索依据、《临时监护条款》存档、静默事故档案摘要。检索依据与她当前状态直接相关。", "ai"],
+        ["小禾", "去看看它怎么写我。它写什么，外面的人就信什么。", "he"],
+        ["主角", "口令呢。", "hero"],
+        ["小禾", "维护口令，三位数字，老规矩。测试记录就压在屏幕底下——这台机器不信人，只信试对的人。", "he"]
       ],
       frag4: [
         ["", "抽屉底下压着一枚录音锚点，旁边一叠空白表格。", "narr"],
@@ -2468,8 +2481,10 @@
           inputLocked = false; return;
         case "frag4":
           inputLocked = false; phase = "truthReady"; setObjective("走到主控台，按 E 打开实验记录。", "编号的真相"); return;
-        case "frag3": case "story": case "terminal":
+        case "frag3": case "story": case "storyIdle": case "terminal":
           inputLocked = false; phase = "corridorExplore"; setObjective("看完记录就回主厅主控台。", "查看记录"); return;
+        case "termIntro":
+          openTerminal(); return;
         case "backToPod":
           moveScene("pod", 260); inputLocked = false; phase = "truthReady"; setObjective("走到主控台，按 E 打开实验记录。", "编号的真相"); return;
         case "truth":
@@ -2541,8 +2556,17 @@
       if (phase === "puzzleReady" && near(250, 90)) { openPuzzle(); return; }
       if (phase === "corridorExplore") {
         if (near(250, 55) && !flags.frag3) { flags.frag3 = true; addLog("碎片三｜递扳手"); heatAdd(0.05, "录音外放"); setDialogue(D.frag3, "frag3"); return; }
-        if (near(675, 60)) { openTerminal(); return; }
-        if (near(585, 60)) { heatAdd(0.009); setDialogue(D.story, "story"); return; }
+        if (near(675, 60)) {
+          // 第一次走近：先讲清这台终端是什么、为什么要读它，再进口令解谜
+          if (!flags.termIntro) { flags.termIntro = true; heatAdd(0.009); setDialogue(D.termIntro, "termIntro"); return; }
+          openTerminal(); return;
+        }
+        if (near(585, 60)) {
+          heatAdd(0.009);
+          // 那天的故事只在第一次讲全；再按只剩一句监视画面
+          if (seenTalks.has("story")) { setDialogue(D.storyIdle, "storyIdle"); return; }
+          setDialogue(D.story, "story"); return;
+        }
         if (near(845, 60)) { setDialogue([["独立 AI", "本地供能稳定。主控台在主厅，回去。", "ai"], ["小禾", "抽屉是坏的，用点力拉。", "he"]], "backToPod"); return; }
       }
       if (phase === "truthReady" && near(300, 52) && !flags.frag4) { flags.frag4 = true; addLog("碎片四｜那一夜"); heatAdd(0.05, "录音外放"); setDialogue(D.frag4, "frag4"); return; }
