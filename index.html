@@ -2498,7 +2498,7 @@
           inputLocked = false; phase = "corridorExplore";
           setObjective("破解中继终端口令，取回校准门的授权。", "解谜 · 维护口令"); return;
         case "backToPod":
-          moveScene("pod", 260); inputLocked = false; phase = "truthReady"; setObjective("走到主控台，按 E 打开实验记录。", "编号的真相"); return;
+          moveScene("pod", 770); inputLocked = false; phase = "truthReady"; setObjective("走到主控台，按 E 打开实验记录。", "编号的真相"); return;
         case "truth":
           setDialogue(D.link, "link"); return;
         case "link":
@@ -2579,7 +2579,8 @@
           if (seenTalks.has("story")) { setDialogue(D.storyIdle, "storyIdle"); return; }
           setDialogue(D.story, "story"); return;
         }
-        if (near(845, 60)) {
+        if (near(110, 60)) {
+          // 回主厅的门就是进来时那扇（走廊左端），空间上左右相邻：主厅右门 ↔ 走廊左门
           // 没破中继终端就想去主控台：授权没取回，后面的校准门开不了，她把他拦回来
           if (!flags.termOpen) { setDialogue(D.termGate, "termGate"); return; }
           setDialogue([["独立 AI", "本地供能稳定。主控台在主厅，回去。", "ai"], ["小禾", "抽屉是坏的，用点力拉。", "he"]], "backToPod"); return;
@@ -2962,7 +2963,7 @@
           { x: 250, range: 55, name: "旧母线录音", label: "播放旧母线上的录音", done: flags.frag3 },
           { x: 585, range: 60, name: "侧控台", label: "听小禾说过去的事", done: seenTalks.has("story") },
           { x: 675, range: 60, name: "中继终端", label: flags.termOpen ? "读取中继终端" : "破解中继终端口令", done: termRead() >= 7 },
-          { x: 845, range: 60, name: "主厅", label: "回主厅", done: false, exit: true }];
+          { x: 110, range: 60, name: "主厅", label: "回主厅", done: false, exit: true }];
         case "truthReady": return [
           { x: 300, range: 52, name: "抽屉", label: "拉开主控台抽屉", done: flags.frag4 },
           { x: 190, range: 76, name: "主控台", label: "打开实验记录", done: false }];
@@ -3033,7 +3034,7 @@
         case "corridorExplore": {
           const items = [["碎片三", flags.frag3], ["小禾的事", seenTalks.has("story")], ["终端记录 " + termRead() + "/7", termRead() >= 7]];
           const undone = items.filter((i) => !i[1]);
-          if (!undone.length) return ["走廊看完了，从右侧回主厅主控台。", "走廊探索 3/3 · 完成"];
+          if (!undone.length) return ["走廊看完了，从左侧的门回主厅主控台。", "走廊探索 3/3 · 完成"];
           return ["看看碎片和中继终端，然后回主厅主控台。", "还可看：" + undone.map((i) => i[0]).join(" · ")];
         }
         case "truthReady": return ["走到主控台，按 E 打开实验记录。", flags.frag4 ? "抽屉里的东西已拿到" : "旁边的抽屉也值得一拉"];
