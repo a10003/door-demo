@@ -1611,10 +1611,18 @@
         ["", "墙角的终端亮着一粒待机灯。城市中继终端——旧网的公共记录节点：公告、条款、事故档案，当年都从这种机器上发。", "narr"],
         ["主角", "这东西怎么还活着。", "hero"],
         ["小禾", "挂在你刚接好的那条木行回路上。三号井一废，它就黑了——你把线接通，它才又亮。", "he"],
-        ["A", "可读取：城市检索依据、《临时监护条款》存档、静默事故档案摘要。检索依据与她当前状态直接相关。", "ai"],
-        ["小禾", "去看看它怎么写我。它写什么，外面的人就信什么。", "he"],
+        ["主角", "我们要它做什么。", "hero"],
+        ["小禾", "开门。校准门的身份验证挂在网上，授权码就锁在这台终端里——不带回去，那扇门只认城市，不认你。", "he"],
+        ["A", "破解维护口令即可取回校准门授权。附加可读：城市检索依据、《临时监护条款》存档、静默事故档案摘要。", "ai"],
+        ["小禾", "进去以后，顺便看看它怎么写我。它写什么，外面的人就信什么。", "he"],
         ["主角", "口令呢。", "hero"],
-        ["小禾", "维护口令，三位数字，老规矩。测试记录就压在屏幕底下——这台机器不信人，只信试对的人。", "he"]
+        ["小禾", "维护口令，三位数字。测试记录就压在屏幕底下——这台机器不信人，只信试对的人。", "he"]
+      ],
+      termGate: [
+        ["小禾", "站住。终端还没破。", "he"],
+        ["小禾", "校准门的授权码还锁在里面。现在回去，到了门前你只能看着它不开。", "he"],
+        ["主角", "……先破终端。", "hero"],
+        ["A", "中继终端：本走廊中段。", "ai"]
       ],
       frag4: [
         ["", "抽屉底下压着一枚录音锚点，旁边一叠空白表格。", "narr"],
@@ -1714,6 +1722,7 @@
       ],
       doorIntro: [
         ["", "校准门的机械联锁松开了，两扇厚门向两侧退开。外面是漆黑的升降井，风从井里往上吹。", "narr"],
+        ["A", "校准门身份验证通过。依据：中继终端维护授权，已生效。", "ai"],
         ["主角", "门开了。", "hero"],
         ["小禾", "我知道。别催。", "he"],
         ["", "她站到门槛前，抬脚。接口轻响了一声，脚没落地，又收回来。", "narr"],
@@ -2485,6 +2494,9 @@
           inputLocked = false; phase = "corridorExplore"; setObjective("看完记录就回主厅主控台。", "查看记录"); return;
         case "termIntro":
           openTerminal(); return;
+        case "termGate":
+          inputLocked = false; phase = "corridorExplore";
+          setObjective("破解中继终端口令，取回校准门的授权。", "解谜 · 维护口令"); return;
         case "backToPod":
           moveScene("pod", 260); inputLocked = false; phase = "truthReady"; setObjective("走到主控台，按 E 打开实验记录。", "编号的真相"); return;
         case "truth":
@@ -2567,7 +2579,11 @@
           if (seenTalks.has("story")) { setDialogue(D.storyIdle, "storyIdle"); return; }
           setDialogue(D.story, "story"); return;
         }
-        if (near(845, 60)) { setDialogue([["独立 AI", "本地供能稳定。主控台在主厅，回去。", "ai"], ["小禾", "抽屉是坏的，用点力拉。", "he"]], "backToPod"); return; }
+        if (near(845, 60)) {
+          // 没破中继终端就想去主控台：授权没取回，后面的校准门开不了，她把他拦回来
+          if (!flags.termOpen) { setDialogue(D.termGate, "termGate"); return; }
+          setDialogue([["独立 AI", "本地供能稳定。主控台在主厅，回去。", "ai"], ["小禾", "抽屉是坏的，用点力拉。", "he"]], "backToPod"); return;
+        }
       }
       if (phase === "truthReady" && near(300, 52) && !flags.frag4) { flags.frag4 = true; addLog("碎片四｜那一夜"); heatAdd(0.05, "录音外放"); setDialogue(D.frag4, "frag4"); return; }
       if (phase === "truthReady" && near(190, 76)) { setDialogue(D.truth, "truth"); return; }
@@ -2663,7 +2679,7 @@
           return '<button type="button" class="term-item" data-term="' + i + '"' + (locked ? " disabled" : "") + '>' +
             '<b>' + e[0] + '</b><span>' + (locked ? "权限不足：需先挂起回收单元" : (flags.term[i] ? "已读" : "读取")) + '</span></button>';
         }).join("") + '</div><div class="term-body" id="termBody">选择一条记录。</div>' +
-        '<div class="bp-choices" style="margin-top:14px"><button type="button" class="bp-choice" data-act="0">关闭终端（不读也能走）</button></div>';
+        '<div class="bp-choices" style="margin-top:14px"><button type="button" class="bp-choice" data-act="0">关闭终端（授权已取回，记录可选读）</button></div>';
       showModal("中继终端 · 旧网记录", "七条 · 可选", body);
       bindChoices(() => closeNode());
       ui.modalBody.querySelectorAll("[data-term]").forEach((btn) => {
@@ -2682,7 +2698,7 @@
         '<p class="bp-text">终端要三位维护口令，数字不重复，键帽只剩 0 到 5。屏幕下面压着五次测试记录。</p>' +
         '<div id="puzzleMount" class="puzzle-mount"></div>' +
         '<div class="puzzle-foot"><span class="puzzle-hint">测试记录是准的：位置对＝数字和位置都对，位置错＝数字在但位置不对。</span>' +
-        '<button type="button" class="btn" id="puzzleSkip">先不读</button></div></div>');
+        '<button type="button" class="btn" id="puzzleSkip">先不破</button></div></div>');
       modalEl.classList.add("wide");
       heatAdd(0.02, "口令试探");
       document.getElementById("puzzleSkip").addEventListener("click", () => closeNode());
